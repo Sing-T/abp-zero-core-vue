@@ -7,6 +7,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { abpObj } from '@/lib/abp'
 
 export default {
   name: 'Dashboard',
@@ -15,6 +16,9 @@ export default {
       'name',
       'roles'
     ])
+  },
+  created: function() {
+    console.log(abpObj.abp)
   }
 }
 </script>

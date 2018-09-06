@@ -1,4 +1,4 @@
-import { login, logout, getInfo } from '@/api/login'
+import { login } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 
 const user = {
@@ -30,9 +30,9 @@ const user = {
       const username = userInfo.username.trim()
       return new Promise((resolve, reject) => {
         login(username, userInfo.password).then(response => {
-          const data = response.data
-          setToken(data.token)
-          commit('SET_TOKEN', data.token)
+          const data = response.result
+          setToken(data.accessToken)
+          commit('SET_TOKEN', data.accessToken)
           resolve()
         }).catch(error => {
           reject(error)
@@ -41,7 +41,7 @@ const user = {
     },
 
     // 获取用户信息
-    GetInfo({ commit, state }) {
+    /* GetInfo({ commit, state }) {
       return new Promise((resolve, reject) => {
         getInfo(state.token).then(response => {
           const data = response.data
@@ -57,19 +57,22 @@ const user = {
           reject(error)
         })
       })
-    },
+    }, */
 
     // 登出
     LogOut({ commit, state }) {
       return new Promise((resolve, reject) => {
-        logout(state.token).then(() => {
-          commit('SET_TOKEN', '')
+        commit('SET_TOKEN', '')
+        removeToken()
+        resolve()
+        /* logout(state.token).then(() => {
+           commit('SET_TOKEN', '')
           commit('SET_ROLES', [])
           removeToken()
           resolve()
         }).catch(error => {
           reject(error)
-        })
+        }) */
       })
     },
 

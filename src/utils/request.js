@@ -13,7 +13,7 @@ const service = axios.create({
 service.interceptors.request.use(
   config => {
     if (store.getters.token) {
-      config.headers['X-Token'] = getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
+      config.headers['Authorization'] = getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
     }
     return config
   },
@@ -27,11 +27,9 @@ service.interceptors.request.use(
 // response 拦截器
 service.interceptors.response.use(
   response => {
-    /**
-     * code为非20000是抛错 可结合自己业务进行修改
-     */
     const res = response.data
-    if (res.code !== 20000) {
+
+    /* if (res.code !== 20000) {
       Message({
         message: res.message,
         type: 'error',
@@ -57,15 +55,28 @@ service.interceptors.response.use(
       return Promise.reject('error')
     } else {
       return response.data
-    }
+    } */
+    return res
   },
   error => {
     console.log('err' + error) // for debug
-    Message({
-      message: error.message,
-      type: 'error',
-      duration: 5 * 1000
-    })
+    if (error.config.url.endsWith('/api/TokenAuth/Authenticate')) {
+      MessageBox.confirm(
+        error.response.data.error.details,
+        error.response.data.error.message,
+        {
+          confirmButtonText: '重新登录',
+          showCancelButton: false,
+          type: 'warning'
+        }
+      )
+    } else {
+      Message({
+        message: error.message,
+        type: 'error',
+        duration: 5 * 1000
+      })
+    }
     return Promise.reject(error)
   }
 )
