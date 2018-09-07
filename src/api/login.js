@@ -11,10 +11,9 @@ export function login(userNameOrEmailAddress, password) {
   })
 }
 
-/* export function getInfo(token) {
+export function getInfo() {
   return request({
-    url: '/user/info',
-    method: 'get',
-    params: { token }
+    url: '/api/services/app/Session/GetCurrentLoginInformations',
+    method: 'get'
   })
-} */
+}
