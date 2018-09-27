@@ -42,11 +42,19 @@ service.interceptors.response.use(
         }
       )
     } else {
-      Message({
-        message: error.message,
-        type: 'error',
-        duration: 5 * 1000
-      })
+      if (error.response.data.error) {
+        Message({
+          message: error.response.data.error.message,
+          type: 'error',
+          duration: 5 * 1000
+        })
+      } else {
+        Message({
+          message: error.message,
+          type: 'error',
+          duration: 5 * 1000
+        })
+      }
     }
     return Promise.reject(error)
   }

@@ -10,10 +10,17 @@
           <!--Form-->
           <el-form :inline="true" :model="form" class="demo-form-inline">
             <el-form-item label="角色名称">
-              <el-input v-model="form.name" size="medium" placeholder="请输入角色名称"/>
+              <el-input v-model="form.name" size="medium" placeholder="请输入角色名称" @keyup.enter.native="handleFilter"/>
             </el-form-item>
             <el-form-item>
-              <el-button v-waves class="filter-item" type="primary" size="small" icon="el-icon-search">查询</el-button>
+              <el-button
+                v-waves
+                class="filter-item"
+                type="primary"
+                size="small"
+                icon="el-icon-search"
+                @click="handleFilter">查询
+              </el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -25,12 +32,26 @@
         <el-card class="box-card">
           <el-row type="flex" justify="end" style="margin-bottom: 10px">
             <el-col :span="6" style="text-align: right">
-              <!--Add-->
-              <el-button v-waves class="filter-item" type="primary" size="small" icon="el-icon-plus" @click="handleCreate">新增</el-button>
+              <!--Create-->
+              <el-button
+                v-waves
+                class="filter-item"
+                type="primary"
+                size="small"
+                icon="el-icon-plus"
+                @click="handleCreate">新增
+              </el-button>
             </el-col>
           </el-row>
           <!--Table-->
-          <el-table v-loading="listLoading" :data="list" :key="key" border fit highlight-current-row style="width: 100%">
+          <el-table
+            v-loading="listLoading"
+            :data="list"
+            :key="key"
+            border
+            fit
+            highlight-current-row
+            style="width: 100%">
             <el-table-column :label="'角色名称'" align="center">
               <template slot-scope="scope">
                 <span>{{ scope.row.name }}</span>
@@ -53,14 +74,24 @@
             </el-table-column>
             <el-table-column :label="'操作'" align="center" class-name="small-padding fixed-width">
               <template slot-scope="scope">
-                <el-button type="primary" size="mini" icon="el-icon-edit" @click="handleUpdate(scope.row)">编辑</el-button>
-                <el-button type="danger" size="mini" icon="el-icon-delete" @click="handleDelete(scope.row,'deleted')">删除</el-button>
+                <el-button type="primary" size="mini" icon="el-icon-edit" @click="handleUpdate(scope.row)">编辑
+                </el-button>
+                <el-button type="danger" size="mini" icon="el-icon-delete" @click="handleDelete(scope.row)">删除
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
           <!--Pagination-->
           <div class="pagination-container">
-            <el-pagination :current-page="listQuery.page" :page-sizes="[10,20,30,50]" :page-size="listQuery.maxResultCount" :total="total" background layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange" @current-change="handleCurrentChange"/>
+            <el-pagination
+              :current-page="listQuery.page"
+              :page-sizes="[10,20,30,50]"
+              :page-size="listQuery.maxResultCount"
+              :total="total"
+              background
+              layout="total, sizes, prev, pager, next, jumper"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"/>
           </div>
         </el-card>
       </el-col>
@@ -68,7 +99,7 @@
 
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
       <el-form
-        ref="dataForm"
+        ref="roleForm"
         :rules="rules"
         :model="temp"
         label-position="right"
@@ -86,13 +117,17 @@
               <el-input v-model="temp.description" maxlength="1024"/>
             </el-form-item>
           </el-tab-pane>
-          <el-tab-pane label="角色权限" name="rolePermission">配置管理</el-tab-pane>
+          <el-tab-pane label="角色权限" name="rolePermission">
+            <el-checkbox-group v-model="temp.permissions">
+              <el-checkbox v-for="permission in allPermissions" :label="permission.name" :key="permission.name"/>
+            </el-checkbox-group>
+          </el-tab-pane>
         </el-tabs>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">取消</el-button>
-        <el-button v-if="dialogStatus=='create'" type="primary" @click="createData">确定</el-button>
-        <el-button v-else type="primary" @click="updateData">确定</el-button>
+        <el-button size="small" @click="dialogFormVisible = false">取消</el-button>
+        <el-button v-if="dialogStatus=='create'" size="small" type="primary" @click="createData">确定</el-button>
+        <el-button v-else size="small" type="primary" @click="updateData">确定</el-button>
       </div>
     </el-dialog>
 
@@ -100,13 +135,19 @@
 </template>
 
 <script>
-import { fetchList/*, fetchPv, createArticle, updateArticle*/ } from '@/api/role'
+import {
+  fetchList,
+  fetchRole,
+  createRole,
+  updateRole,
+  deleteRole
+} from '@/api/role'
+import { mapGetters } from 'vuex'
 import waves from '@/directive/waves' // 水波纹指令
 
 export default {
   name: 'Role',
-  components: {
-  },
+  components: {},
   directives: {
     waves
   },
@@ -135,7 +176,8 @@ export default {
         id: undefined,
         name: '',
         displayName: '',
-        description: ''
+        description: '',
+        permissions: []
       },
       dialogFormVisible: false,
       dialogStatus: '',
@@ -144,25 +186,43 @@ export default {
         create: '新增'
       },
       rules: {
-        name: [{ required: true, message: '角色名称是必填的', trigger: 'blur' }],
-        displayName: [{ required: true, message: '显示名称是必填的', trigger: 'blur' }]
+        name: [
+          { required: true, message: '角色名称是必填的', trigger: 'blur' }
+        ],
+        displayName: [
+          { required: true, message: '显示名称是必填的', trigger: 'blur' }
+        ]
       }
     }
   },
+  computed: {
+    ...mapGetters([
+      'allPermissions'
+    ])
+  },
   created() {
     this.getList()
+    this.$store.dispatch('GetAllPermissions').then(response => {
+      // do nothing
+    })
   },
   methods: {
     getList: function() {
       this.listLoading = true
       // TODO 注释
-      this.listQuery.skipCount = (this.listQuery.page - 1) * this.listQuery.maxResultCount
+      this.listQuery.skipCount =
+          (this.listQuery.page - 1) * this.listQuery.maxResultCount
       fetchList(this.listQuery).then(response => {
         this.list = response.result.items
         this.total = response.result.totalCount
 
         this.listLoading = false
       })
+    },
+    handleFilter() {
+      this.listQuery.page = 1
+      this.listQuery.name = this.form.name
+      this.getList()
     },
     handleSizeChange(val) {
       this.listQuery.maxResultCount = val
@@ -180,7 +240,8 @@ export default {
         id: undefined,
         name: '',
         displayName: '',
-        description: ''
+        description: '',
+        permissions: []
       }
     },
     handleCreate() {
@@ -189,68 +250,70 @@ export default {
       this.dialogStatus = 'create'
       this.dialogFormVisible = true
       this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
+        this.$refs['roleForm'].clearValidate()
       })
     },
     handleUpdate(row) {
       this.resetTab()
-      this.temp = Object.assign({}, row) // copy obj
-      this.temp.timestamp = new Date(this.temp.timestamp)
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
+      fetchRole(row).then(response => {
+        this.temp = Object.assign({}, response.result)
+        this.$nextTick(() => {
+          this.$refs['roleForm'].clearValidate()
+        })
       })
     },
     handleDelete(row) {
-      this.$notify({
-        title: '成功',
-        message: '删除成功',
-        type: 'success',
-        duration: 2000
+      this.$confirm('此操作将删除该角色, 是否继续?', '提示', {
+        type: 'warning'
+      }).then(() => {
+        deleteRole(row).then(res => {
+          this.getList()
+          this.$notify({
+            title: '成功',
+            message: '删除成功',
+            type: 'success',
+            position: 'bottom-right',
+            duration: 2000
+          })
+        })
+      }).catch(action => {
+        // do nothing
       })
-      const index = this.list.indexOf(row)
-      this.list.splice(index, 1)
     },
     createData() {
-      this.$refs['dataForm'].validate((valid) => {
+      this.$refs['roleForm'].validate(valid => {
         if (valid) {
-          this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          this.temp.author = 'vue-element-admin'
-          /* createArticle(this.temp).then(() => {
-            this.list.unshift(this.temp)
+          createRole(this.temp).then(() => {
+            this.getList()
             this.dialogFormVisible = false
             this.$notify({
               title: '成功',
               message: '创建成功',
               type: 'success',
+              position: 'bottom-right',
               duration: 2000
             })
-          })*/
+          })
         }
       })
     },
     updateData() {
-      this.$refs['dataForm'].validate((valid) => {
+      this.$refs['roleForm'].validate(valid => {
         if (valid) {
           const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
-          /* updateArticle(tempData).then(() => {
-            for (const v of this.list) {
-              if (v.id === this.temp.id) {
-                const index = this.list.indexOf(v)
-                this.list.splice(index, 1, this.temp)
-                break
-              }
-            }
+          updateRole(tempData).then(() => {
+            this.getList()
             this.dialogFormVisible = false
             this.$notify({
               title: '成功',
               message: '更新成功',
               type: 'success',
+              position: 'bottom-right',
               duration: 2000
             })
-          })*/
+          })
         }
       })
     }
