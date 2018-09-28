@@ -97,39 +97,11 @@
       </el-col>
     </el-row>
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form
-        ref="roleForm"
-        :rules="rules"
-        :model="temp"
-        label-position="right"
-        label-width="80px"
-        style="margin-left:50px;margin-right: 60px;">
-        <el-tabs v-model="activeTab" type="border-card">
-          <el-tab-pane label="角色信息" name="roleInfo" style="padding-top: 10px">
-            <el-form-item :label="'角色名称'" prop="name">
-              <el-input v-model="temp.name" maxlength="32"/>
-            </el-form-item>
-            <el-form-item :label="'显示名称'" prop="displayName">
-              <el-input v-model="temp.displayName" maxlength="32"/>
-            </el-form-item>
-            <el-form-item :label="'角色描述'">
-              <el-input v-model="temp.description" maxlength="1024"/>
-            </el-form-item>
-          </el-tab-pane>
-          <el-tab-pane label="角色权限" name="rolePermission">
-            <el-checkbox-group v-model="temp.permissions">
-              <el-checkbox v-for="permission in allPermissions" :label="permission.name" :key="permission.name"/>
-            </el-checkbox-group>
-          </el-tab-pane>
-        </el-tabs>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button size="small" @click="dialogFormVisible = false">取消</el-button>
-        <el-button v-if="dialogStatus=='create'" size="small" type="primary" @click="createData">确定</el-button>
-        <el-button v-else size="small" type="primary" @click="updateData">确定</el-button>
-      </div>
-    </el-dialog>
+    <role-modal
+      :visible="dialogFormVisible"
+      :status="dialogStatus"
+      @dialog-visible="changeDialogVisible"
+      @save-success="getList"/>
 
   </div>
 </template>
@@ -138,16 +110,15 @@
 import {
   fetchList,
   fetchRole,
-  createRole,
-  updateRole,
   deleteRole
 } from '@/api/role'
 import { mapGetters } from 'vuex'
 import waves from '@/directive/waves' // 水波纹指令
+import RoleModal from './role-modal'
 
 export default {
   name: 'Role',
-  components: {},
+  components: { RoleModal },
   directives: {
     waves
   },
@@ -171,28 +142,8 @@ export default {
         skipCount: 0,
         name: null
       },
-      activeTab: '',
-      temp: {
-        id: undefined,
-        name: '',
-        displayName: '',
-        description: '',
-        permissions: []
-      },
       dialogFormVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: '编辑',
-        create: '新增'
-      },
-      rules: {
-        name: [
-          { required: true, message: '角色名称是必填的', trigger: 'blur' }
-        ],
-        displayName: [
-          { required: true, message: '显示名称是必填的', trigger: 'blur' }
-        ]
-      }
+      dialogStatus: 'create'
     }
   },
   computed: {
@@ -215,7 +166,6 @@ export default {
       fetchList(this.listQuery).then(response => {
         this.list = response.result.items
         this.total = response.result.totalCount
-
         this.listLoading = false
       })
     },
@@ -232,9 +182,6 @@ export default {
       this.listQuery.page = val
       this.getList()
     },
-    resetTab() {
-      this.activeTab = 'roleInfo'
-    },
     resetTemp() {
       this.temp = {
         id: undefined,
@@ -245,24 +192,21 @@ export default {
       }
     },
     handleCreate() {
-      this.resetTab()
       this.resetTemp()
       this.dialogStatus = 'create'
+      this.$store.commit('SET_ROLE', this.temp)
       this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['roleForm'].clearValidate()
-      })
     },
     handleUpdate(row) {
-      this.resetTab()
       this.dialogStatus = 'update'
-      this.dialogFormVisible = true
       fetchRole(row).then(response => {
         this.temp = Object.assign({}, response.result)
-        this.$nextTick(() => {
-          this.$refs['roleForm'].clearValidate()
-        })
+        this.$store.commit('SET_ROLE', this.temp)
+        this.dialogFormVisible = true
       })
+    },
+    changeDialogVisible(visible) {
+      this.dialogFormVisible = visible
     },
     handleDelete(row) {
       this.$confirm('此操作将删除该角色, 是否继续?', '提示', {
@@ -280,41 +224,6 @@ export default {
         })
       }).catch(action => {
         // do nothing
-      })
-    },
-    createData() {
-      this.$refs['roleForm'].validate(valid => {
-        if (valid) {
-          createRole(this.temp).then(() => {
-            this.getList()
-            this.dialogFormVisible = false
-            this.$notify({
-              title: '成功',
-              message: '创建成功',
-              type: 'success',
-              position: 'bottom-right',
-              duration: 2000
-            })
-          })
-        }
-      })
-    },
-    updateData() {
-      this.$refs['roleForm'].validate(valid => {
-        if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          updateRole(tempData).then(() => {
-            this.getList()
-            this.dialogFormVisible = false
-            this.$notify({
-              title: '成功',
-              message: '更新成功',
-              type: 'success',
-              position: 'bottom-right',
-              duration: 2000
-            })
-          })
-        }
       })
     }
   }

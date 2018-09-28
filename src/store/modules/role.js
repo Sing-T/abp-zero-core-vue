@@ -2,12 +2,16 @@ import { getAllPermissions } from '@/api/role'
 
 const role = {
   state: {
+    role: {},
     allPermissions: []
   },
 
   mutations: {
     SET_ALLPERMISSION: (state, allPermissions) => {
       state.allPermissions = allPermissions
+    },
+    SET_ROLE: (state, role) => {
+      state.role = role
     }
   },
 
